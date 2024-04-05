@@ -147,7 +147,7 @@ list_attractive_df$lexicon <- "attractive"
 
 # Kong et al. (2023) (https://doi.org/10.1016/j.landurbplan.2023.104692)
 
-list_CES <- read.csv2("C:/Users/ikong/Documents/R/phrasal_lexicon_CES_USNP+CNP.csv", 
+list_CES <- read.csv2("C:/Users/your_local_file.csv", 
                       header = TRUE, sep = ",")
 
 list_CES_aesthetic <- list_CES %>% dplyr::filter(CES == "Aesthetic") 
