@@ -23,14 +23,12 @@ Corpus was generated from Guardian API. Once the text was retrieved, we went thr
 
 2.6 assign spatial boundary (spatial boundary data was acquired from https://geoportal.statistics.gov.uk/)
 
-### 3. Identifying the values 
+### 3. Identifying the values (attached code you can find)
 3.1 spaCy text processing, 3.2 selecting nouns, 
 
 3.3 fetch pre-built lexicons from Koblet & Purves (2020) (https://doi.org/10.1016/j.landurbplan.2020.103757) and Kong et al. (2023) (https://doi.org/10.1016/j.landurbplan.2023.104692), 
 
 3.4 apply the pre-built lexicons to nouns. 
-
-** attached code you find the processing of phases 3.3 and 3.4
 
 
 ### 4. Plot the result 
