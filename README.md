@@ -18,17 +18,24 @@ Corpus was generated from Guardian API. Once the text was retrieved, we went thr
 
 ### 2. Locating the corpus 
 2.1 spaCy text processing, 2.2 NER retrieval, 2.3 POS-based place name retrieval, 2.4 merge the place name candidates, 
+
 2.5 geolocating using ggmap, 
+
 2.6 assign spatial boundary (spatial boundary data was acquired from https://geoportal.statistics.gov.uk/)
 
 ### 3. Identifying the values 
 3.1 spaCy text processing, 3.2 selecting nouns, 
+
 3.3 fetch pre-built lexicons from Koblet & Purves (2020) (https://doi.org/10.1016/j.landurbplan.2020.103757) and Kong et al. (2023) (https://doi.org/10.1016/j.landurbplan.2023.104692), 
+
 3.4 apply the pre-built lexicons to nouns. 
+
 ** attached code you find the processing of phases 3.3 and 3.4
+
 
 ### 4. Plot the result 
 4.1 prepare spatial boundary, 
+
 4.2 total count map (Figure 2), 
 
 4.3 map: attractiveness (Figure 3), 4.4 map: aesthetic (Figure 4), 
