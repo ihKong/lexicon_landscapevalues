@@ -1,0 +1,302 @@
+---
+title: "public"
+author: "Kong, Inhye"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# 0. System setup 
+
+Define system language and time 
+```{r, warning=FALSE, message=FALSE}
+Sys.setenv(LANG = "en")
+Sys.setlocale("LC_TIME", "English")
+```
+
+Retrieve library packages 
+```{r, warning=FALSE, message=FALSE}
+invisible(
+  lapply(
+    c('tidyr', 'tidyverse','dplyr', 'stringr', 'uk2us', 'udpipe'),
+       library, character.only = T))
+
+options(dplyr.summarise.inform = F) 
+```
+
+Initiate NLP model 
+```{r}
+library(spacyr)
+
+#spacy_download_langmodel(model = "en_core_web_trf")
+
+spacy_initialize(model = "en_core_web_trf")
+
+#spacy_finalize()
+```
+
+# 3. Identifying landscape values 
+
+### 3.1 NLP 
+```{r}
+# fetch the corpus in this study 
+exists("G_data_final")
+
+# NLP 
+G_bodytext_trf <- spacy_parse(G_data_final$body_text, 
+                       dependency = FALSE, entity = TRUE, 
+                       nounphrase = TRUE, tag = FALSE)
+
+# create American lemmas
+G_bodytext_trf$lemma_br <- G_bodytext_trf$lemma
+
+G_bodytext_trf$lemma <- convert_uk2us(G_bodytext_trf$lemma)
+
+
+# prepare the data 
+G_bodytext_trf$doc_id0 <- as.numeric(sub("text", "", G_bodytext_trf$doc_id))
+
+G_bodytext_trf <- G_bodytext_trf %>%
+  dplyr::select(doc_id0, doc_id, everything()) %>%
+  arrange(doc_id0, sentence_id, token_id)
+
+```
+
+### 3.2 Screening nouns 
+```{r}
+# filter nouns 
+parse_nounonly <- G_bodytext_trf %>% dplyr::filter(pos == "NOUN") %>% 
+  dplyr::select(doc_id, sentence_id, lemma)
+
+# summarize the frequency for review 
+parse_nounonly_summary <- parse_nounonly %>% 
+  group_by(lemma) %>% summarize(count = n()) 
+
+```
+
+### 3.3 Fetch lexical items  
+Fetch pre-built lexicons
+```{r}
+# Koblet & Purves (2020) (https://doi.org/10.1016/j.landurbplan.2020.103757)
+
+list_mammals <- c("beaver","vole","mouse","rat","dormouse","squirrel","porcupine",
+                  "hare","rabbit","mole","shrew","hedgehog","bat","pipistrelle","dog",
+                  "fox","seal","walrus","marten","weasel","polecat","otter","badger",
+                  "wildcat","cat","mink","coati","boar","goat","sheep","cattle","deer",
+                  "reindeer","moose","muntjac","buffalo","whale","dolphin","beluga",
+                  "porpoise","orca","cow","stag","cattle","lamb") #from Koblet & Purves 
+
+list_natural <- c("water","river","tree","beach","sea","snow","coast","stone","rain",
+                  "grass","harbour","seaside","leaves","lake","wood","plant","sand",
+                  "pond","mist","fog","ice","rock","forest","hill","island","leaf",
+                  "mountain","bay","waterfall","loch","wave","seafront","mud",
+                  "landscape","summit","valley") #from Koblet & Purves 
+
+list_attractive <- c('natural arch', 'steep ascent', 'small bay', 'beautiful beach',
+                     'sandy beach', 'rocky beach', 'rocky bit', 'dissected bog', 
+                     'large boulder', 'huge boulder', 'small cairn', 'south coast', 
+                     'west coast', 'rocky coast', 'rocky coastline', 'south corner', 
+                     'small crags', 'steep descent', 'middle distance', 'far distance', 
+                     'near distance', 'steep drop', 'cliff edge', 'south end', 'top end', 
+                     'north end', 'west face', 'glen floor', 'flat floor', 
+                     'lewisian gneiss', 'deep gorge', 'rough grass', 'tussocky grass', 
+                     'rough grazing', 'high ground', 'boggy ground', 'prominent hill', 
+                     'distant hill', 'small hill', 'conical hill', 'rocky hill', 
+                     'big hill', 'little hill', 'low hill', 'rough hill', 'unnamed hill', 
+                     'surrounding hills', 'small hills', 'far horizon', 'small island', 
+                     'tidal island', 'small loch', 'freshwater loch', 'shallow loch', 
+                     'long loch', 'largest loch', 'small lochan', 'unnamed lochan', 
+                     'tiny lochan', 'rough moorland', 'topped mountain', 
+                     'highest mountain', 'small outcrop', 'rocky outcrops', 'lower part', 
+                     'upper part', 'eastern part', 'good path', 'coastal path', 
+                     'made path', 'faint path', 'rocky pavement', 'prominent peak', 
+                     'sharp peak', 'highest peak', 'shapely peak', 'old pier', 
+                     'few place', 'highest point', 'high point', 'low point', 
+                     'lowest point', 'deep pool', 'rocky promontory', 
+                     'cambrian quartzite', 'long ridge', 'south ridge', 'west ridge', 
+                     'east ridge', 'steep ridge', 'southern ridge', 'narrow ridge', 
+                     'broad ridge', 'northwest ridge', 'southwest ridge', 
+                     'northern ridge', 'sharp ridge', 'rocky ridge', 'gentle ridge', 
+                     'exposed rock', 'more rock', 'coastal scenery', 'beautiful scenery', 
+                     'south shore', 'northern shore', 'far shore', 'eastern shore', 
+                     'southern shore', 'far side', 'southern side', 'eastern side', 
+                     'northern side', 'western side', 'southeast side', 'right side', 
+                     'right skyline', 'left skyline', 'steep slope', 'lower slope', 
+                     'northern slope', 'western slope', 'southern slope', 'eastern slope', 
+                     'gentle slope', 'moderate slope', 'rough slope', 'north slope', 
+                     'rocky slope', 'covered slope', 'facing slope', 'fresh snow', 
+                     'early snow', 'little snow', 'deep snow', 'heavy snow', 'rocky spur', 
+                     'stepping stone', 'horizontal strata', 'flat summit', 'true summit', 
+                     'main summit', 'rocky summit', 'many summit', 'low tide', 
+                     'high tide', 'northern tip', 'southern tip', 'eastern top', 
+                     'cliff top', 'lower top', 'unnamed top', 'south top', 'rough track', 
+                     'brown trout', 'small trout', 'steep valley', 'upper valley', 
+                     'shaped valley', 'fine view', 'distant view', 'good view', 
+                     'great view', 'similar view', 'superb view', 'wonderful view', 
+                     'spectacular view', 'clear view', 'fine viewpoint', 'good viewpoint', 
+                     'magnificent view', 'stunning view', 'small waterfall', 
+                     'highest hill', 'remote hill', 'west shore') #from Koblet & Purves 
+
+# for lexicons with n-gram entries: 
+list_attractive_df <- data.frame(result = list_attractive)
+
+list_attractive_df$ngram <- lengths(gregexpr("\\W+", list_attractive_df$result)) +1
+
+list_attractive_df$lexicon <- "attractive"
+
+
+
+
+# Kong et al. (2023) (https://doi.org/10.1016/j.landurbplan.2023.104692)
+
+list_CES <- read.csv2("C:/Users/ikong/Documents/R/phrasal_lexicon_CES_USNP+CNP.csv", 
+                      header = TRUE, sep = ",")
+
+list_CES_aesthetic <- list_CES %>% dplyr::filter(CES == "Aesthetic") 
+
+list_CES_biological <- list_CES %>% dplyr::filter(CES == "Biological") 
+
+rm(list_CES)
+
+
+# for lexicons with n-gram entries: 
+list_CES_aesthetic <- list_CES_aesthetic %>% dplyr::select(Category, Phrase)
+
+names(list_CES_aesthetic)[names(list_CES_aesthetic) == 'Phrase'] <- 'result'
+
+list_CES_aesthetic$ngram <- lengths(gregexpr("\\W+", list_CES_aesthetic$result)) +1
+
+list_CES_aesthetic$lexicon <- "aesthetic"
+
+
+list_CES_biological <- list_CES_biological %>% dplyr::select(Category, Phrase)
+
+names(list_CES_biological)[names(list_CES_biological) == 'Phrase'] <- 'result'
+
+list_CES_biological$ngram <- lengths(gregexpr("\\W+", list_CES_biological$result)) +1
+
+list_CES_biological$lexicon <- "biological"
+
+```
+
+
+### 3.4 Apply lexicon 
+```{r}
+stopwords <- c("a", "all", "another", "any", "both","each","every","some","the",
+               "these","this","those","whatever","which","whose")
+
+
+
+# attractive
+temp_at <- data.frame(
+  txt_recode_ngram(G_bodytext_trf$lemma_br,
+                   compound = list_attractive_df$result,
+                   ngram = list_attractive_df$ngram, sep = " ")) %>% 
+  setNames("compound_word")
+
+G_bodytext_trf$result <- temp_at$compound_word
+
+temp_attract <- left_join(G_bodytext_trf[, c("doc_id", "sentence_id", "result")], 
+                          list_attractive_df,  by = "result")
+
+temp_attract <- temp_attract %>% dplyr::filter(!is.na(lexicon))
+
+temp_attract_summary <- temp_attract  %>%
+  group_by(result) %>%
+  summarise(Freq = n()) %>%
+  arrange(desc(Freq)) 
+
+rm(temp_at)
+
+
+# aesthetic
+temp_aes <-
+  G_bodytext_trf[!(G_bodytext_trf$lemma %in% stopwords),]
+
+temp <- data.frame(
+  txt_recode_ngram(
+    temp_aes$lemma,
+    compound = list_CES_aesthetic$result,
+    ngram = list_CES_aesthetic$ngram,
+    sep = " "
+  )
+) %>%
+  setNames("compound_word")
+
+temp_aes$result <- temp$compound_word
+
+temp_aesthetic <- left_join(temp_aes[,
+                                                 c("doc_id", "sentence_id", "result")],
+                            list_CES_aesthetic,  by = "result")
+
+temp_aesthetic <- temp_aesthetic %>% dplyr::filter(!is.na(lexicon))
+
+
+temp_aesthetic_summary <- temp_aesthetic  %>%
+  group_by(result) %>%
+  summarise(Freq = n()) %>%
+  arrange(desc(Freq))
+
+rm(temp_aes)
+
+
+
+
+# natural elements
+temp_natural <- G_bodytext_trf %>% dplyr::filter(pos == "NOUN") %>%
+  dplyr::filter(lemma_br %in% list_natural)
+
+colnames(temp_natural)[colnames(temp_natural) == 'lemma_br'] <-
+  'result'
+
+temp_natural_summary <- temp_natural  %>%
+  group_by(result) %>%
+  summarise(Freq = n()) %>%
+  arrange(desc(Freq))
+
+
+
+# mammals
+temp_mammals <- G_bodytext_trf %>% dplyr::filter(pos == "NOUN") %>%
+  dplyr::filter(lemma_br %in% list_mammals)
+
+colnames(temp_mammals)[colnames(temp_mammals) == 'lemma_br'] <-
+  'result'
+
+temp_mammals_summary <- temp_mammals  %>%
+  group_by(result) %>%
+  summarise(Freq = n()) %>%
+  arrange(desc(Freq))
+
+
+
+# biological
+temp_bio <-
+  G_bodytext_trf[!(G_bodytext_trf$lemma %in% stopwords),]
+
+
+temp <- data.frame(
+  txt_recode_ngram(
+    temp_bio$lemma,
+    compound = list_CES_biological$result,
+    ngram = list_CES_biological$ngram,
+    sep = " "
+  )
+) %>%
+  setNames("compound_word")
+
+temp_bio$result <- temp$compound_word
+
+temp_biological <-
+  left_join(temp_bio[, c("doc_id", "sentence_id", "result")],
+            list_CES_biological,  by = "result")
+
+temp_biological <-
+  temp_biological %>% dplyr::filter(!is.na(lexicon))
+
+temp_biological_summary <- temp_biological  %>%
+  group_by(result) %>%
+  summarise(Freq = n()) %>%
+  arrange(desc(Freq))
+
+rm(temp_bio)
+
+```  
