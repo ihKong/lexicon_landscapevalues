@@ -1,13 +1,12 @@
 # Locality and transferability
+### : examining pre-built lexicons to elicit landscape values from natural language
+This is to explain the key code for a short paper submitted to the Association of Geographic Information Laboratories in Europe (AGILE), 2024, which abides by the policy of DASA (Data and Software Availability). 
 
-Code for a short paper submitted to the Association of Geographic Information Laboratories in Europe (AGILE), 2024. 
-It abides by DASA (Data and Software Availability). 
-
-Details to follow. 
+Details to be updated shortly after the proceeding is published to public. 
 
 
 ## Abstract
-
+TBA
 
 
 
@@ -16,12 +15,14 @@ Details to follow.
 ### 1. Data collection
 Corpus was generated from Guardian API. Once the text was retrieved, we went through data cleaning (e.g., removing irrelevant articles). 
 
+
 ### 2. Locating the corpus 
 2.1 spaCy text processing, 2.2 NER retrieval, 2.3 POS-based place name retrieval, 2.4 merge the place name candidates, 
 
 2.5 geolocating using ggmap, 
 
 2.6 assign spatial boundary (spatial boundary data was acquired from https://geoportal.statistics.gov.uk/)
+
 
 ### 3. Identifying the values (attached code you can find)
 3.1 spaCy text processing, 3.2 selecting nouns, 
